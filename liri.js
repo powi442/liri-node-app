@@ -1,9 +1,9 @@
-var Twitter= require('twitter');
-var spotify = require('spotify');
+var Twitter = require('twitter');
+var Spotify = require('node-spotify-api');
 var request = require('request');
 var inquirer = require('inquirer');
 
-var keys= require("./keys.js")
+var keys = require("./keys.js")
 
 var client = new Twitter({
   consumer_key: keys.twitterKeys.consumer_key,
@@ -12,55 +12,63 @@ var client = new Twitter({
   access_token_secret: keys.twitterKeys.access_token_secret
 });
 
-var client2 = new spotify({
+var spotify = new Spotify({
   id: keys.spotifyKeys.id,
   secret: keys.spotifyKeys.secret
 });
 
-inquirer.prompt([
-  {
+inquirer.prompt([{
     type: "list",
     name: "doWhat",
     message: "What would you like to do?",
     choices: ["my-tweets", "spotify-this-song", "movie-this", "do-what-it-says"]
-  }
-]).then(function(user) {
+  }]).then(function(user) {
 
-  if (user.doWhat === "my-tweets") {
+      if (user.doWhat === "my-tweets") {
 
-    var params = {
-      q: 'pow_red_rabbit',
-      count: 20
-    };
+        var params = {
+          q: 'pow_red_rabbit',
+          count: 20
+        };
 
-    client.get('search/tweets', params, gotData);
-    function gotData(err, data, response) {
-      var tweets = data.statuses;
-      for (var i = 0; i < tweets.length; i++){
-        console.log("Ian's tweets: "+ tweets[i].text + "\nCreated on: " + tweets[i].created_at);
-        }
-      };
-    }
-  if (user.doWhat === "spotify-this-song"){
-    inquirer.prompt([
-      {
-        type: "input",
-        name: "songName",
-        message: "What song would you like me to check out?"
+        client.get('search/tweets', params, gotData);
+
+        function gotData(err, data, response) {
+          var tweets = data.statuses;
+          for (var i = 0; i < tweets.length; i++) {
+            console.log("Ian's tweets: " + tweets[i].text + "\nCreated on: " + tweets[i].created_at);
+          }
+        };
       }
-    ]).then(function(user) {
+      if (user.doWhat === "spotify-this-song") {
+        inquirer.prompt([
+          {
+          type: "input",
+          name: "songName",
+          message: "What song would you like me to check out?"
+        }]).then(function(user) {
 
-      client2.search({ type: 'track', query: 'dancing in the moonlight' }, function(err, data) {
-    if ( err ) {
-        console.log('Error occurred: ' + err);
-        return;
-    }
+          var songName = user.songName
+          if ( songName === undefined){
+            songName = "Whats my age again";
+          }
 
-      console.log(data);
-      });
+
+          spotify
+            .request("https://api.spotify.com/v1/search?query="+ songName +"&type=track&market=US&offset=0&limit=20")
+              .then(function(data) {
+                var songs= data.tracks.items;
+                console.log(songs)
+                for (var i = 0; i < songs.length; i++){
+                  console.log("Artist(s): "+ + "\nNames: " +songs[i].name);
+                }
+
+              })
+              .catch(function(err) {
+                console.error('Error occurred: ' + err);
+  });
+
+          })
+      };
+
     })
-
-
-    }
-
-});
